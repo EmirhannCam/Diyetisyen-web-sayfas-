@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifler - Beslenme Uzmanı</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" onload="this.rel='stylesheet'">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Recipes Page Specific Styles */
+        .recipes-section {
+            padding: 64px 0;
+            background-color: #f5f5f5;
+        }
+
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-top: 32px;
+        }
+
+        .recipe-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .recipe-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .recipe-content {
+            padding: 20px;
+        }
+
+        .recipe-content h2 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .recipe-content p {
+            margin: 0 0 15px;
+            color: var(--text-secondary);
+        }
+
+        .recipe-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .recipe-tag {
+            background-color: #e8f5e9;
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 40px auto;
+            padding: 32px;
+            max-width: 800px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+
+        .close-modal:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .modal img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .ingredients-list, .instructions-list {
+            padding-left: 20px;
+            margin: 16px 0;
+        }
+
+        .ingredients-list li, .instructions-list li {
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .recipes-section {
+                padding: 32px 0;
+            }
+
+            .recipes-grid {
+                gap: 20px;
+                padding: 0 20px;
+            }
+
+            .modal-content {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+
+        /* Floating Layer Card Styles */
+        .floating-card {
+            position: relative;
+            background: transparent;
+            border-radius: 32px;
+            box-shadow: 0 4px 24px 0 rgba(80,80,120,0.10);
+            overflow: visible;
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 0 24px 0;
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        .floating-card:hover {
+            box-shadow: 0 8px 32px 0 rgba(80,80,120,0.18);
+            transform: translateY(-6px) scale(1.03);
+        }
+        .floating-blob-bg {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+            transition: filter 0.4s, opacity 0.4s;
+            filter: blur(0px);
+            opacity: 1;
+        }
+        .floating-card:hover .floating-blob-bg {
+            filter: blur(2px) brightness(1.1);
+            opacity: 0.95;
+        }
+        .floating-image-wrapper {
+            position: relative;
+            z-index: 2;
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .floating-image {
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 50%;
+            box-shadow: 0 4px 24px 0 rgba(80,80,120,0.18);
+            border: 5px solid #fff;
+            background: #fff;
+            position: relative;
+        }
+        .floating-category-badge {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #6366f1 60%, #a5b4fc 100%);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 5px 18px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px 0 rgba(99,102,241,0.10);
+            z-index: 3;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .floating-content {
+            margin-top: 24px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+        .floating-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #2d2d3a;
+            line-height: 1.2;
+            text-align: center;
+            max-width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .floating-desc {
+            font-size: 14px;
+            color: #4b5563;
+            margin-bottom: 18px;
+            line-height: 1.4;
+            text-align: center;
+            max-height: 2.8em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .floating-tags {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .floating-tag {
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            font-size: 12px;
+            color: #6366f1;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px 0 rgba(80,80,120,0.07);
+            font-weight: 500;
+        }
+        @media (max-width: 900px) {
+            .floating-card {
+                min-height: 220px;
+                padding-bottom: 12px;
+            }
+            .floating-image {
+                width: 80px;
+                height: 80px;
+            }
+            .floating-category-badge {
+                font-size: 11px;
+                padding: 3px 10px;
+                top: -12px;
+            }
+            .floating-title {
+                font-size: 15px;
+            }
+            .floating-desc {
+                font-size: 12px;
+                margin-bottom: 10px;
+            }
+            .floating-tag {
+                font-size: 10px;
+                padding: 3px 7px;
+            }
+            .floating-content {
+                margin-top: 14px;
+            }
+        }
+
+        /* Doğal ve ortalı kart tasarımı */
+        .natural-card {
+            background: linear-gradient(135deg, #fdf6ee 70%, #e6f4ea 100%);
+            border-radius: 24px;
+            box-shadow: 0 4px 24px 0 rgba(180,160,120,0.10);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 380px;
+            max-width: 340px;
+            margin: 0 auto;
+            transition: box-shadow 0.3s, transform 0.3s;
+            padding-bottom: 18px;
+        }
+        .natural-card:hover {
+            box-shadow: 0 8px 32px 0 rgba(180,160,120,0.18);
+            transform: translateY(-6px) scale(1.03);
+        }
+        .natural-image-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: none;
+            margin-bottom: 0;
+        }
+        .natural-image {
+            width: 92%;
+            max-width: 270px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 20px 20px 12px 12px;
+            margin-top: 18px;
+            box-shadow: 0 2px 12px 0 rgba(180,160,120,0.10);
+            background: #fff;
+        }
+        .natural-category-badge {
+            position: absolute;
+            top: 10px;
+            left: 24px;
+            background: linear-gradient(90deg, #b7c7a3 70%, #fdf6ee 100%);
+            color: #4b5a3a;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 22px 6px 16px;
+            border-radius: 16px 8px 16px 8px;
+            box-shadow: 0 2px 8px 0 rgba(180,160,120,0.10);
+            z-index: 3;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-left: 4px solid #b7c7a3;
+            border-right: none;
+            /* Kenara yaklaşınca kısalır */
+            clip-path: polygon(0 0, 100% 0, 90% 100%, 0% 100%);
+        }
+        .natural-content {
+            margin-top: 18px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+        .natural-title {
+            font-size: 21px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #3a3a2d;
+            line-height: 1.2;
+            text-align: center;
+            max-width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .natural-desc {
+            font-size: 15px;
+            color: #5a5a4b;
+            margin-bottom: 18px;
+            line-height: 1.4;
+            text-align: center;
+            max-height: 2.8em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .natural-tags {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .natural-tag {
+            background: #f6f1e7;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #7a6c4d;
+            padding: 5px 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px 0 rgba(180,160,120,0.07);
+            font-weight: 500;
+        }
+        .recipes-grid {
+            display: flex !important;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 36px;
+            margin-top: 32px;
+            padding: 0;
+        }
+        @media (max-width: 900px) {
+            .natural-card {
+                min-height: 260px;
+                max-width: 98vw;
+                padding-bottom: 10px;
+            }
+            .natural-image {
+                height: 120px;
+                max-width: 98vw;
+            }
+            .natural-category-badge {
+                font-size: 12px;
+                padding: 4px 12px 4px 10px;
+                top: 6px;
+                left: 10px;
+            }
+            .natural-title {
+                font-size: 16px;
+            }
+            .natural-desc {
+                font-size: 12px;
+                margin-bottom: 10px;
+            }
+            .natural-tag {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+            .natural-content {
+                margin-top: 10px;
+            }
+            .recipes-grid {
+                gap: 16px;
+            }
+        }
+
+        .fancy-title {
+            font-family: 'Dancing Script', 'Pacifico', 'Brush Script MT', cursive, sans-serif;
+            font-size: 3rem;
+            background: linear-gradient(90deg, #7a6c4d 0%, #f6b47b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            margin-bottom: 0.5em;
+            position: relative;
+            animation: fadeSlideDown 1.2s cubic-bezier(.4,2,.3,1);
+            font-weight: 700;
+            letter-spacing: 1px;
+            z-index: 2;
+            text-shadow: 0 2px 8px #fff8, 0 1px 0 #f6b47b88;
+        }
+        .fancy-title::after {
+            content: '';
+            display: block;
+            width: 180px;
+            height: 24px;
+            margin: 0.2em auto 0 auto;
+            background: url('data:image/svg+xml;utf8,<svg width="180" height="24" viewBox="0 0 180 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1" x1="0" y1="12" x2="180" y2="12" gradientUnits="userSpaceOnUse"><stop stop-color="%237a6c4d"/><stop offset="1" stop-color="%23f6b47b"/></linearGradient></defs><path d="M10 12C40 20 140 4 170 12" stroke="url(%23g1)" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.25"/></svg>') no-repeat center/contain;
+        }
+        @keyframes fadeSlideDown {
+            0% { opacity: 0; transform: translateY(-30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .section-subtitle {
+            font-size: 1.15rem;
+            color: #7a6c4d;
+            text-align: center;
+            margin-bottom: 1.5em;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: 400;
+            letter-spacing: 0.1px;
+            animation: fadeSlideDown 1.5s 0.2s cubic-bezier(.4,2,.3,1) both;
+        }
+        @media (max-width: 600px) {
+            .fancy-title {
+                font-size: 2rem;
+            }
+            .fancy-title::after {
+                width: 110px;
+                height: 14px;
+            }
+            .section-subtitle {
+                font-size: 1rem;
+            }
+        }
+
+        .category-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 24px 0;
+            justify-content: center;
+        }
+        .category-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 18px;
+            padding: 12px 28px 12px 40px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #f3faf6 60%, #e6f4ea 100%);
+            color: #2d3a2d;
+            font-family: 'Roboto', 'Dancing Script', cursive, sans-serif;
+            font-size: 1.13rem;
+            font-weight: 600;
+            box-shadow: 0 2px 12px 0 rgba(163,217,177,0.08);
+            cursor: pointer;
+            transition: background 0.22s, color 0.18s, box-shadow 0.22s, transform 0.18s;
+            outline: none;
+            letter-spacing: 0.2px;
+            min-width: 120px;
+            user-select: none;
+        }
+        .category-btn::before {
+            content: '';
+            position: absolute;
+            left: 16px;
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 1.18em;
+            color: #a3d9b1;
+            transition: color 0.18s;
+        }
+        .category-btn[data-category="all"]::before { content: '\f009'; }
+        .category-btn[data-category="kilo-verme"]::before { content: '\f496'; }
+        .category-btn[data-category="kas-yapma"]::before { content: '\f44b'; }
+        .category-btn[data-category="enerji-artisi"]::before { content: '\f0e7'; }
+        .category-btn[data-category="bagisiklik"]::before {
+            content: '\f3ed'; /* fa-shield-alt */
+            font-family: 'Font Awesome 5 Free', 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        .category-btn[data-category="sindirim"]::before { content: '\f5d1'; }
+        .category-btn[data-category="seker-kontrolu"]::before { content: '\f043'; }
+        .category-btn[data-category="kalp-sagligi"]::before { content: '\f004'; }
+        .category-btn[data-category="cilt-bakimi"]::before { content: '\f5bb'; }
+        .category-btn[data-category="detoks"]::before { content: '\f094'; }
+        .category-btn[data-category="zihin-acikligi"]::before { content: '\f5dc'; }
+        .category-btn[data-category="yaslanma-karsiti"]::before { content: '\f4d8'; }
+        .category-btn[data-category="iltihap"]::before { content: '\f06d'; }
+        .category-btn[data-category="hormon"]::before { content: '\f24e'; }
+        .category-btn[data-category="stres"]::before { content: '\f118'; }
+        .category-btn[data-category="spor"]::before { content: '\f70c'; }
+        .category-btn[data-category="hamile"]::before { content: '\f77c'; }
+        .category-btn[data-category="diyabet"]::before { content: '\f48e'; }
+        .category-btn[data-category="kolesterol"]::before { content: '\f613'; }
+        .category-btn[data-category="tansiyon"]::before { content: '\f21e'; }
+        .category-btn[data-category="kemik"]::before { content: '\f5d7'; }
+        .category-btn:hover, .category-btn.active {
+            background: linear-gradient(90deg, #e6f4ea 60%, #a3d9b1 100%);
+            color: #20613a;
+            box-shadow: 0 6px 24px 0 rgba(123,191,138,0.13);
+            transform: scale(1.04);
+        }
+        .category-btn:hover::before, .category-btn.active::before {
+            color: #20613a;
+        }
+        .category-btn.active {
+            background: linear-gradient(90deg, #a3d9b1 60%, #e6f4ea 100%);
+            color: #20613a;
+            font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .category-filters {
+                padding: 0 8px;
+                gap: 10px;
+            }
+            .category-btn {
+                font-size: 1rem;
+                padding: 8px 14px 8px 32px;
+                min-width: 80px;
+            }
+            .category-btn::before {
+                left: 8px;
+                font-size: 1em;
+            }
+        }
+        @media (min-width: 769px) {
+            .category-btn {
+                gap: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="../../index.html" class="nav-logo">
+                <i class="fas fa-leaf"></i>
+                <span style="margin-left: 8px;">Beslenme Uzmanı</span>
+            </a>
+            <button class="hamburger-menu" aria-label="Menüyü aç/kapat" aria-expanded="false" aria-controls="navLinks">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="../../index.html">Ana Sayfa</a></li>
+                <li><a href="about.html">Hakkımda</a></li>
+                <li><a href="diyetler.html">Diyetler</a></li>
+                <li><a href="recipes.html" class="active">Tarifler</a></li>
+                <li><a href="contact.html">İletişim</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="recipes-section">
+        <div class="container">
+            <h1 class="fancy-title">Sağlıklı Tarifler</h1>
+            <p class="section-subtitle">Diyetisyeninizin özenle seçtiği, sağlığınıza ve damak zevkinize hitap eden tariflerle tanışın. Hedefinize uygun, pratik ve lezzetli yemekleri kolayca keşfedin!</p>
+            
+            <div class="category-filters" id="categoryFilters">
+                <button class="category-btn active" data-category="all">Tümü</button>
+                <button class="category-btn" data-category="bagisiklik">Bağışıklık Güçlendirme</button>
+                <button class="category-btn" data-category="cilt-bakimi">Cilt Bakımı</button>
+                <button class="category-btn" data-category="detoks">Detoks Yapma</button>
+                <button class="category-btn" data-category="diyabet">Diyabet Kontrolü</button>
+                <button class="category-btn" data-category="enerji-artisi">Enerji Artışı</button>
+                <button class="category-btn" data-category="hamile">Hamile Beslenmesi</button>
+                <button class="category-btn" data-category="hormon">Hormon Dengesi</button>
+                <button class="category-btn" data-category="iltihap">İltihap Azaltma</button>
+                <button class="category-btn" data-category="kalp-sagligi">Kalp Sağlığı</button>
+                <button class="category-btn" data-category="kas-yapma">Kas Yapma</button>
+                <button class="category-btn" data-category="kemik">Kemik Güçlendirme</button>
+                <button class="category-btn" data-category="kilo-verme">Kilo Verme</button>
+                <button class="category-btn" data-category="kolesterol">Kolesterol Düşürme</button>
+                <button class="category-btn" data-category="seker-kontrolu">Şeker Kontrolü</button>
+                <button class="category-btn" data-category="sindirim">Sindirim Desteği</button>
+                <button class="category-btn" data-category="spor">Spor Performansı</button>
+                <button class="category-btn" data-category="stres">Stres Yönetimi</button>
+                <button class="category-btn" data-category="tansiyon">Tansiyon Düzenleme</button>
+                <button class="category-btn" data-category="yaslanma-karsiti">Yaşlanma Karşıtı</button>
+                <button class="category-btn" data-category="zihin-acikligi">Zihin Açıklığı</button>
+            </div>
+            
+            <div id="recipesGrid" class="recipes-grid">
+                <!-- Recipe cards will be dynamically inserted here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Recipe Modal -->
+    <div id="recipeModal" class="modal">
+        <div class="modal-content">
+            <button id="closeModal" class="close-modal" aria-label="Tarifi kapat">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="recipeDetails">
+                <!-- Recipe details will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Dyt. Elif Yılmaz. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script src="../../src/js/main.js"></script>
+    <script src="../../src/js/recipes.js"></script>
+</body>
+</html>
